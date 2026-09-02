@@ -73,7 +73,7 @@ const AdminController = {
         return;
       }
 
-      if (pinInput === '1234') {
+      if (pinInput === 'temurbek2008310808') {
         const attemptKey = `admin_attempts_${Store.currentUser.username}`;
         localStorage.removeItem(attemptKey);
 
