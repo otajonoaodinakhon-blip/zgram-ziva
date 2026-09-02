@@ -1,0 +1,24 @@
+{
+  "name": "z-gram",
+  "version": "1.0.0",
+  "description": "Z gram - High-scale DB-less Social & Messaging Platform",
+  "main": "server.js",
+  "scripts": {
+    "start": "node --max-old-space-size=256 server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "z-gram",
+    "z-chat",
+    "p2p",
+    "gundb",
+    "render-free-tier",
+    "512mb-ram-optimized"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2",
+    "gun": "^0.2020.1239"
+  }
+}

@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Z gram - High-Scale Social & Messaging Platform</title>
+  
+  <!-- Favicon -->
+  <link rel="shortcut icon" href="z.png" type="image/png" />
+  <link rel="apple-touch-icon" href="z.png" />
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  
+  <!-- Custom CSS Styles -->
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  
+  <!-- GunDB Client Script for P2P Synchronization -->
+  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+</head>
+<body>
+
+  <div id="app-layout">
+    
+    <!-- Desktop Sidebar Navigation -->
+    <aside class="sidebar">
+      <a href="#" class="brand-logo" onclick="App.switchTab('feed')">
+        <img src="z.png" alt="Z gram Logo" class="brand-img-icon" />
+        <span>Z gram</span>
+      </a>
+
+      <ul class="nav-links">
+        <li class="nav-item active">
+          <button class="nav-btn" data-tab="feed">
+            <i class="fas fa-home"></i>
+            <span>Asosiy</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-btn" data-tab="explore">
+            <i class="fas fa-users"></i>
+            <span>Foydalanuvchilar</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-btn" data-tab="chat">
+            <i class="far fa-paper-plane"></i>
+            <span>Z Chat</span>
+            <span class="badge-count">Live</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button id="btn-create-post-modal">
+            <i class="far fa-plus-square"></i>
+            <span>Yangi Post</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-btn" data-tab="profile">
+            <i class="far fa-user-circle"></i>
+            <span>Profil</span>
+          </button>
+        </li>
+        <li class="nav-item" style="margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+          <button id="btn-open-admin" style="color: var(--accent-color);">
+            <i class="fas fa-shield-alt"></i>
+            <span id="admin-btn-label">Admin Kirish</span>
+          </button>
+        </li>
+      </ul>
+
+      <div class="user-control-widget">
+        <div class="current-user-card" id="sidebar-user-card">
+          <img src="" alt="User Avatar" />
+          <div class="user-info">
+            <div class="username">@user</div>
+            <div class="user-role">Foydalanuvchi</div>
+          </div>
+          <button id="btn-switch-user" title="Profilidan chiqish" style="color: var(--danger);">
+            <i class="fas fa-sign-out-alt"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-wrapper">
+      
+      <!-- Top Bar (Mobile Only) -->
+      <header class="top-bar">
+        <div class="brand-logo">
+          <img src="z.png" alt="Z gram Logo" class="brand-img-icon" />
+          <span>Z gram</span>
+        </div>
+        <button onclick="App.openCreatePostModal()">
+          <i class="far fa-plus-square" style="font-size: 22px;"></i>
+        </button>
+      </header>
+
+      <!-- Feed Tab Content -->
+      <section id="feed-section" class="feed-container">
+        <!-- Top Stories Slider -->
+        <div class="stories-wrapper" id="stories-container">
+          <!-- Rendered dynamically -->
+        </div>
+
+        <!-- Feed Posts List -->
+        <div id="feed-posts-list">
+          <!-- Rendered dynamically -->
+        </div>
+      </section>
+
+      <!-- Explore / Users Discovery Tab Content -->
+      <section id="explore-section" style="display: none;">
+        <div id="explore-content"></div>
+      </section>
+
+      <!-- User Profile Tab Content -->
+      <section id="profile-section" style="display: none;">
+        <div id="profile-content"></div>
+      </section>
+
+      <!-- Direct Messages Chat Tab Content -->
+      <section id="chat-section" style="display: none;">
+        <div id="chat-content"></div>
+      </section>
+
+      <!-- Bottom Bar (Mobile Navigation) -->
+      <nav class="bottom-bar">
+        <button class="nav-btn" data-tab="feed"><i class="fas fa-home" style="font-size: 20px;"></i></button>
+        <button class="nav-btn" data-tab="explore"><i class="fas fa-users" style="font-size: 19px;"></i></button>
+        <button class="nav-btn" data-tab="chat"><i class="far fa-paper-plane" style="font-size: 20px;"></i></button>
+        <button onclick="App.openCreatePostModal()"><i class="far fa-plus-square" style="font-size: 22px;"></i></button>
+        <button class="nav-btn" data-tab="profile"><i class="far fa-user-circle" style="font-size: 20px;"></i></button>
+      </nav>
+    </main>
+
+  </div>
+
+  <!-- REAL FULLSCREEN STORY VIEWER MODAL -->
+  <div class="story-viewer-modal" id="story-viewer-modal">
+    <div class="story-viewer-card">
+      <div class="story-progress-bar-wrap">
+        <div class="story-progress-fill" id="story-viewer-progress-fill"></div>
+      </div>
+      <div class="story-header-overlay">
+        <div class="story-author-info">
+          <img id="story-viewer-avatar" src="" alt="Author" />
+          <div class="name" id="story-viewer-author">@author</div>
+        </div>
+        <div class="story-close-btn" onclick="App.closeStoryViewer()">
+          <i class="fas fa-times"></i>
+        </div>
+      </div>
+      <div class="story-media-container" id="story-viewer-media"></div>
+    </div>
+  </div>
+
+  <!-- FOLLOWERS / FOLLOWING LIST MODAL -->
+  <div class="modal-backdrop" id="follow-list-modal">
+    <div class="modal-content" style="max-width: 440px;">
+      <div class="modal-header">
+        <h3 id="follow-list-title"><i class="fas fa-users"></i> Obunachilar</h3>
+        <button onclick="App.closeModal('follow-list-modal')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div id="follow-list-container" style="max-height: 340px; overflow-y: auto; display: flex; flex-direction: column;">
+          <!-- List rendered dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMMENTS DRAWER MODAL -->
+  <div class="modal-backdrop" id="comments-modal">
+    <div class="modal-content" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3><i class="far fa-comments"></i> Z gram Izohlar</h3>
+        <button onclick="App.closeModal('comments-modal')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div id="comments-modal-list" style="max-height: 340px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+          <!-- Comments rendered dynamically -->
+        </div>
+
+        <div class="chat-input-bar" style="margin-top: 10px;">
+          <input type="text" id="modal-comment-input" placeholder="Izoh bildiring..." onkeypress="if(event.key==='Enter') App.submitModalComment()" />
+          <button onclick="App.submitModalComment()" style="color: var(--accent-color); font-weight: 600;">Joylash</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AUTHENTICATION MODAL (Register / Login) -->
+  <div class="modal-backdrop" id="auth-modal">
+    <div class="modal-content" style="max-width: 420px;">
+      <div class="modal-header" style="justify-content: center;">
+        <div class="brand-logo" style="margin-bottom: 0;">
+          <img src="z.png" alt="Z gram Logo" class="brand-img-icon" />
+          <span>Z gram Kirish</span>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div style="display: flex; background: rgba(0,0,0,0.3); border-radius: var(--radius-md); padding: 4px; margin-bottom: 16px;">
+          <button id="btn-auth-tab-login" class="active" onclick="App.switchAuthTab('login')" style="flex: 1; padding: 10px; border-radius: var(--radius-sm); font-weight: 600;">Kirish (Login)</button>
+          <button id="btn-auth-tab-signup" onclick="App.switchAuthTab('signup')" style="flex: 1; padding: 10px; border-radius: var(--radius-sm); font-weight: 600;">Ro'yxatdan o'tish</button>
+        </div>
+
+        <!-- Login Form -->
+        <form id="auth-login-form" onsubmit="App.handleLogin(event)" style="display: flex; flex-direction: column; gap: 14px;">
+          <div>
+            <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Username:</label>
+            <input type="text" id="auth-login-username" placeholder="masalan: jasur_dev" required style="width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-top: 4px;" />
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Parol:</label>
+            <input type="password" id="auth-login-pass" placeholder="••••••••" required style="width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-top: 4px;" />
+          </div>
+          <button type="submit" style="background: var(--insta-gradient); color: white; padding: 12px; border-radius: var(--radius-md); font-weight: 700; font-size: 14px; margin-top: 8px;">
+            Kirish
+          </button>
+        </form>
+
+        <!-- Sign Up Form -->
+        <form id="auth-signup-form" onsubmit="App.handleSignUp(event)" style="display: none; flex-direction: column; gap: 14px;">
+          <div>
+            <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Username (Noyob nom):</label>
+            <input type="text" id="auth-signup-username" placeholder="masalan: jasur_dev" required style="width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-top: 4px;" />
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Ism va Familiya:</label>
+            <input type="text" id="auth-signup-fullname" placeholder="Jasur Rahimov" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-top: 4px;" />
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Parol:</label>
+            <input type="password" id="auth-signup-pass" placeholder="••••••••" required style="width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-top: 4px;" />
+          </div>
+          <button type="submit" style="background: var(--insta-gradient); color: white; padding: 12px; border-radius: var(--radius-md); font-weight: 700; font-size: 14px; margin-top: 8px;">
+            Akkaunt Yaratish
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Post Modal (Direct Device File Selector for Images & Videos) -->
+  <div class="modal-backdrop" id="create-post-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="far fa-plus-square"></i> Z gram Yangi Post</h3>
+        <button onclick="App.closeModal('create-post-modal')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div>
+          <label style="font-size: 13px; font-weight: 600; color: var(--accent-color);">1. Rasm yoki Video Tanlash:</label>
+          <input type="file" id="new-post-file-input" accept="image/*,video/*" style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 2px dashed var(--accent-color); border-radius: var(--radius-md); margin-top: 6px; cursor: pointer;" />
+          <img id="new-post-image-preview" style="width: 100%; max-height: 280px; object-fit: cover; border-radius: var(--radius-md); margin-top: 10px; display: none;" />
+          <video id="new-post-video-preview" controls style="width: 100%; max-height: 280px; border-radius: var(--radius-md); margin-top: 10px; display: none; background: #000;"></video>
+        </div>
+
+        <div>
+          <label style="font-size: 13px; font-weight: 600; color: var(--text-secondary);">Post Izohi (Caption):</label>
+          <textarea id="new-post-caption" rows="3" placeholder="Fikringizni yozing..." style="width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-top: 6px;"></textarea>
+        </div>
+
+        <button onclick="App.submitNewPost()" style="background: var(--insta-gradient); color: white; padding: 12px; border-radius: var(--radius-md); font-weight: 700; font-size: 14px; margin-top: 10px;">
+          Postni Joylash
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Profile Modal -->
+  <div class="modal-backdrop" id="edit-profile-modal">
+    <div class="modal-content" style="max-width: 460px;">
+      <div class="modal-header">
+        <h3><i class="fas fa-edit"></i> Profilni Tahrirlash</h3>
+        <button onclick="App.closeModal('edit-profile-modal')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div style="text-align: center;">
+          <img id="edit-profile-avatar-preview" src="" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-color);" />
+          <div style="margin-top: 8px;">
+            <label style="font-size: 12px; color: var(--accent-color); cursor: pointer; text-decoration: underline;">
+              Yangi profil rasmini tanlash
+              <input type="file" id="edit-profile-avatar-file" accept="image/*" style="display: none;" />
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Ism va Familiya:</label>
+          <input type="text" id="edit-profile-fullname" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-top: 4px;" />
+        </div>
+
+        <div>
+          <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Bio (Ma'lumot):</label>
+          <textarea id="edit-profile-bio" rows="3" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-top: 4px;"></textarea>
+        </div>
+
+        <button onclick="App.saveProfileChanges()" style="background: var(--insta-gradient); color: white; padding: 12px; border-radius: var(--radius-md); font-weight: 700; font-size: 14px; margin-top: 10px;">
+          Saqlash
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin PIN Modal -->
+  <div class="modal-backdrop" id="admin-pin-modal">
+    <div class="modal-content" style="max-width: 360px;">
+      <div class="modal-header">
+        <h3><i class="fas fa-key"></i> Admin Paroli</h3>
+        <button onclick="AdminController.closePinModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div>
+          <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Admin PIN Kodini kiriting (Standart: 1234):</label>
+          <input type="password" id="admin-pin-input" placeholder="1234" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-top: 6px;" />
+        </div>
+        <button onclick="AdminController.toggleAdminMode()" style="background: var(--insta-gradient); color: white; padding: 12px; border-radius: var(--radius-md); font-weight: 700; font-size: 14px; margin-top: 6px;">
+          Tasdiqlash
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Dashboard Modal -->
+  <div class="modal-backdrop" id="admin-modal">
+    <div class="modal-content" style="max-width: 720px;">
+      <div class="modal-header">
+        <h3 style="color: var(--accent-color);"><i class="fas fa-shield-alt"></i> Z gram Admin Paneli</h3>
+        <button onclick="AdminController.closeModal()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="admin-stats-grid" id="admin-stats-container"></div>
+
+        <!-- Global Chat Purge Section -->
+        <div style="margin-top: 16px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); padding: 14px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <h4 style="color: #fca5a5; font-size: 14px;"><i class="fas fa-trash-alt"></i> Z Chat Tarixini Tozalash</h4>
+            <div style="font-size: 11px; color: var(--text-secondary);">Barcha foydalanuvchilar xabarlarini 1-klikda to'liq o'chirish</div>
+          </div>
+          <button class="btn-danger" onclick="AdminController.clearChatPrompt()"><i class="fas fa-trash-alt"></i> Chatni Butunlay O'chirish</button>
+        </div>
+
+        <!-- Verified Badge Management Section -->
+        <div style="margin-top: 16px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); padding: 16px; border-radius: var(--radius-md);">
+          <h4 style="color: var(--accent-color); font-size: 14px; margin-bottom: 8px;"><i class="fas fa-check-circle"></i> Z gram Rasmiy Verified Badge Berish</h4>
+          <div style="display: flex; gap: 10px;">
+            <input type="text" id="admin-verify-username" placeholder="Username (masalan: jasur_dev)" style="flex: 1; padding: 8px 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: var(--radius-sm);" />
+            <button onclick="AdminController.toggleVerifyPrompt()" style="background: var(--accent-color); color: black; font-weight: 700; padding: 8px 16px; border-radius: var(--radius-sm);">
+              Verified Belgisini Qo'shish / Olib Tashlash
+            </button>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+          <h4><i class="fas fa-list"></i> Postlar Moderatsiyasi</h4>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="admin-action-username" placeholder="Username..." style="padding: 6px 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 12px;" />
+            <button class="btn-danger" onclick="AdminController.banUserPrompt()"><i class="fas fa-user-slash"></i> Ban qilish</button>
+          </div>
+        </div>
+
+        <table class="admin-table" id="admin-posts-table">
+          <thead>
+            <tr>
+              <th>Muallif</th>
+              <th>Izoh</th>
+              <th>Vaqt</th>
+              <th>Amal</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+
+        <h4 style="margin-top: 20px;"><i class="fas fa-check-circle" style="color: var(--accent-color);"></i> Verified Akkauntlar Listi</h4>
+        <table class="admin-table" id="admin-verified-table">
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Maqom</th>
+              <th>Amal</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+
+        <h4 style="margin-top: 20px;"><i class="fas fa-ban" style="color: var(--danger);"></i> Taqiqlangan (Banned) Foydalanuvchilar</h4>
+        <table class="admin-table" id="admin-banned-table">
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Holat</th>
+              <th>Amal</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+
+        <button onclick="AdminController.toggleAdminMode()" style="background: rgba(255,255,255,0.08); color: var(--danger); padding: 10px; border-radius: var(--radius-md); margin-top: 16px; font-weight: 600;">
+          <i class="fas fa-sign-out-alt"></i> Admin Rejimidan Chiqish
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Core Modules -->
+  <script src="js/toast.js"></script>
+  <script src="js/emojis.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/admin.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
